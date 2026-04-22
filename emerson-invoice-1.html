@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Emerson Global — Invoice Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C9A84C; --gold-light: #E8C96A;
+      --dark: #0D0D0D; --dark2: #1A1A1A; --dark3: #2A2A2A;
+      --text: #E8E4DC; --muted: #888; --border: rgba(201,168,76,0.2);
+      --bg: #111111;
+    }
+    body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .app { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+
+    /* FORM PANEL */
+    .form-panel { background: var(--dark2); padding: 36px; border-right: 1px solid var(--border); overflow-y: auto; max-height: 100vh; }
+
+    .form-brand h1 { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--gold); letter-spacing: 2px; }
+    .form-brand p { font-size: 0.72rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+
+    .sec { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    .field input, .field textarea, .field select {
+      width: 100%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 5px; padding: 10px 12px;
+      font-family: 'Jost', sans-serif; font-size: 0.88rem; color: var(--text);
+      outline: none; transition: border-color 0.2s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--gold); }
+    .field select option { background: var(--dark3); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ITEMS */
+    .items-hdr { display: grid; grid-template-columns: 2fr 1fr 36px; gap: 8px; margin-bottom: 6px; }
+    .items-hdr span { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .item-row { display: grid; grid-template-columns: 2fr 1fr 36px; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .item-row select, .item-row input { padding: 8px 10px; font-size: 0.82rem; }
+    .rm-btn { width: 32px; height: 32px; background: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; color: var(--muted); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .rm-btn:hover { border-color: #c0392b; color: #c0392b; }
+
+    .add-btn { background: none; border: 1px dashed var(--gold); color: var(--gold); border-radius: 4px; padding: 8px; font-family: 'Jost', sans-serif; font-size: 0.8rem; cursor: pointer; width: 100%; margin-top: 4px; transition: background 0.2s; }
+    .add-btn:hover { background: rgba(201,168,76,0.06); }
+
+    .gen-btn { width: 100%; background: var(--gold); color: var(--dark); border: none; border-radius: 5px; padding: 14px; font-family: 'Jost', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; margin-top: 24px; transition: background 0.3s; }
+    .gen-btn:hover { background: var(--gold-light); }
+
+    /* PREVIEW PANEL */
+    .preview-panel { background: #1C1C1C; padding: 36px; overflow-y: auto; max-height: 100vh; }
+    .preview-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .preview-top span { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+    .dl-btn { background: var(--gold); color: var(--dark); border: none; border-radius: 4px; padding: 8px 18px; font-family: 'Jost', sans-serif; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+    .dl-btn:hover { background: var(--gold-light); }
+
+    /* INVOICE */
+    .invoice { background: white; color: #1A1A1A; padding: 48px; border-radius: 2px; max-width: 580px; margin: 0 auto; box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+
+    .inv-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 3px solid #0D0D0D; }
+    .inv-biz h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; font-weight: 700; color: #C9A84C; letter-spacing: 1px; }
+    .inv-biz .tagline { font-size: 0.72rem; color: #888; letter-spacing: 1px; margin-top: 2px; }
+    .inv-biz .biz-info { font-size: 0.78rem; color: #444; margin-top: 10px; line-height: 1.7; }
+    .inv-right { text-align: right; }
+    .inv-right .inv-word { font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; font-weight: 700; color: #0D0D0D; text-transform: uppercase; letter-spacing: 3px; line-height: 1; }
+    .inv-right .inv-num { font-size: 0.75rem; color: #C9A84C; letter-spacing: 1px; margin-top: 6px; }
+    .inv-right .inv-dates { font-size: 0.75rem; color: #888; margin-top: 4px; line-height: 1.6; }
+
+    .inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+    .party-lbl { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: #C9A84C; margin-bottom: 6px; }
+    .party-name { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: #0D0D0D; margin-bottom: 3px; }
+    .party-info { font-size: 0.78rem; color: #555; line-height: 1.6; }
+
+    table.inv-tbl { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .inv-tbl th { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: #888; padding: 8px 0; border-bottom: 1px solid #E0D8CC; text-align: left; }
+    .inv-tbl th:nth-child(2), .inv-tbl th:nth-child(3), .inv-tbl th:nth-child(4) { text-align: right; }
+    .inv-tbl td { padding: 11px 0; border-bottom: 1px solid #F0EBE3; font-size: 0.85rem; color: #444; }
+    .inv-tbl td:first-child { color: #1A1A1A; font-weight: 500; }
+    .inv-tbl td:nth-child(2), .inv-tbl td:nth-child(3), .inv-tbl td:nth-child(4) { text-align: right; }
+
+    .inv-totals { margin-left: auto; width: 210px; }
+    .tot-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.83rem; color: #555; }
+    .tot-row.grand { border-top: 2px solid #0D0D0D; margin-top: 8px; padding-top: 10px; font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 700; color: #0D0D0D; }
+
+    .inv-pay { margin-top: 32px; padding-top: 20px; border-top: 1px solid #E0D8CC; }
+    .inv-pay-lbl { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: #C9A84C; margin-bottom: 8px; }
+    .inv-pay-info { font-size: 0.8rem; color: #444; line-height: 1.8; }
+    .inv-pay-acct { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: #0D0D0D; letter-spacing: 2px; }
+
+    .inv-notes { margin-top: 20px; background: #F7F4EF; border-radius: 3px; padding: 14px 16px; }
+    .inv-notes-lbl { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 5px; }
+    .inv-notes p { font-size: 0.8rem; color: #555; line-height: 1.6; }
+
+    .inv-foot { margin-top: 28px; text-align: center; font-size: 0.7rem; color: #aaa; letter-spacing: 1px; }
+
+    /* PRINT */
+    @media print {
+      body { background: white; }
+      .app { display: block; }
+      .form-panel, .preview-top { display: none !important; }
+      .preview-panel { padding: 0; background: white; max-height: none; }
+      .invoice { box-shadow: none; max-width: 100%; padding: 32px; }
+    }
+
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .form-panel { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+      .preview-panel { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- FORM -->
+  <div class="form-panel">
+    <div class="form-brand">
+      <h1>Emerson Global</h1>
+      <p>Invoice Generator</p>
+    </div>
+
+    <div class="sec">Invoice Details</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Invoice No.</label>
+        <input type="text" id="invNum" value="INV-001" oninput="update()"/>
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="invDate" oninput="update()"/>
+      </div>
+    </div>
+    <div class="field">
+      <label>Due Date</label>
+      <input type="date" id="dueDate" oninput="update()"/>
+    </div>
+
+    <div class="sec">Customer Details</div>
+    <div class="field">
+      <label>Customer Name</label>
+      <input type="text" id="custName" placeholder="e.g. Amina Bello" oninput="update()"/>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Phone</label>
+        <input type="text" id="custPhone" placeholder="08012345678" oninput="update()"/>
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <input type="text" id="custLocation" placeholder="e.g. Kano" oninput="update()"/>
+      </div>
+    </div>
+
+    <div class="sec">Order Items</div>
+    <div class="items-hdr">
+      <span>Product</span>
+      <span>Cartons</span>
+      <span></span>
+    </div>
+    <div id="itemsContainer"></div>
+    <button class="add-btn" onclick="addItem()">+ Add Product</button>
+
+    <div class="sec">Summary</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Discount (₦)</label>
+        <input type="number" id="discount" value="0" placeholder="0" oninput="update()"/>
+      </div>
+      <div class="field">
+        <label>Deposit Paid (₦)</label>
+        <input type="number" id="deposit" value="0" placeholder="0" oninput="update()"/>
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="notes" placeholder="e.g. Thank you for your order! Delivery within 24 hours." oninput="update()"></textarea>
+    </div>
+
+    <button class="gen-btn" onclick="window.print()">⬇ Download PDF Invoice</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-panel">
+    <div class="preview-top">
+      <span>Live Preview</span>
+      <button class="dl-btn" onclick="window.print()">⬇ Download PDF</button>
+    </div>
+    <div class="invoice" id="invoice"></div>
+  </div>
+
+</div>
+
+<script>
+  const PRODUCTS = [
+    { name: 'Pet Coke',       price: 4500 },
+    { name: 'Peach',          price: 6200 },
+    { name: 'Fearless',       price: 5000 },
+    { name: 'Predator',       price: 5000 },
+    { name: 'Reaktor',        price: 4200 },
+    { name: 'Cheetah',        price: 3600 },
+    { name: 'Nutri Milk',     price: 5500 },
+    { name: 'Dudu Yoghurt',   price: 6800 },
+    { name: 'Yugo',           price: 6900 },
+    { name: 'Monster',        price: 21500 },
+    { name: 'Pop Power',      price: 2800 },
+    { name: 'Pop Cola',       price: 2250 },
+    { name: 'Lacasera Small', price: 2800 },
+    { name: 'Lacasera Big',   price: 4200 },
+    { name: 'Planet Small',   price: 2500 },
+    { name: 'Planet Big',     price: 4200 },
+    { name: 'Maltina Can',    price: 11800 },
+    { name: 'Malt Pet',       price: 5200 },
+    { name: 'Malta Guinness', price: 11800 },
+  ];
+
+  const productOptions = PRODUCTS.map((p, i) =>
+    `<option value="${i}">${p.name} — ₦${p.price.toLocaleString()}/carton</option>`
+  ).join('');
+
+  let items = [{ productIdx: 0, qty: 1 }];
+
+  // Set dates
+  const today = new Date();
+  document.getElementById('invDate').value = today.toISOString().split('T')[0];
+  const due = new Date(today); due.setDate(due.getDate() + 3);
+  document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+
+  function addItem() {
+    items.push({ productIdx: 0, qty: 1 });
+    renderItems();
+    update();
+  }
+
+  function removeItem(i) {
+    if (items.length === 1) return;
+    items.splice(i, 1);
+    renderItems();
+    update();
+  }
+
+  function renderItems() {
+    document.getElementById('itemsContainer').innerHTML = items.map((item, i) => `
+      <div class="item-row">
+        <select onchange="items[${i}].productIdx=+this.value;update()">${productOptions.replace(`value="${item.productIdx}"`, `value="${item.productIdx}" selected`)}</select>
+        <input type="number" min="1" value="${item.qty}" oninput="items[${i}].qty=+this.value;update()"/>
+        <button class="rm-btn" onclick="removeItem(${i})">×</button>
+      </div>
+    `).join('');
+  }
+
+  const fmt = n => '₦' + Number(n).toLocaleString('en-NG');
+  const fmtDate = d => {
+    if (!d) return '—';
+    const [y, m, day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${day} ${months[+m-1]} ${y}`;
+  };
+
+  function update() {
+    const invNum = document.getElementById('invNum').value || 'INV-001';
+    const invDate = document.getElementById('invDate').value;
+    const dueDate = document.getElementById('dueDate').value;
+    const custName = document.getElementById('custName').value || 'Customer Name';
+    const custPhone = document.getElementById('custPhone').value || '';
+    const custLocation = document.getElementById('custLocation').value || '';
+    const discount = +document.getElementById('discount').value || 0;
+    const deposit = +document.getElementById('deposit').value || 0;
+    const notes = document.getElementById('notes').value || '';
+
+    const subtotal = items.reduce((s, item) => {
+      const p = PRODUCTS[item.productIdx];
+      return s + (p.price * item.qty);
+    }, 0);
+
+    const total = subtotal - discount;
+    const balance = total - deposit;
+
+    const rows = items.map(item => {
+      const p = PRODUCTS[item.productIdx];
+      const amount = p.price * item.qty;
+      return `<tr>
+        <td>${p.name}</td>
+        <td>${item.qty} carton${item.qty > 1 ? 's' : ''}</td>
+        <td>${fmt(p.price)}</td>
+        <td>${fmt(amount)}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('invoice').innerHTML = `
+      <div class="inv-top">
+        <div class="inv-biz">
+          <h2>Emerson Global</h2>
+          <div class="tagline">Trade · Retail · E-Commerce</div>
+          <div class="biz-info">
+            📞 09060584228<br/>
+            Maiduguri, Borno, Nigeria<br/>
+            RC No. 9486752
+          </div>
+        </div>
+        <div class="inv-right">
+          <div class="inv-word">Invoice</div>
+          <div class="inv-num">#${invNum}</div>
+          <div class="inv-dates">
+            Date: ${fmtDate(invDate)}<br/>
+            Due: ${fmtDate(dueDate)}
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-parties">
+        <div>
+          <div class="party-lbl">Billed To</div>
+          <div class="party-name">${custName}</div>
+          <div class="party-info">${custPhone}${custLocation ? '<br/>' + custLocation : ''}</div>
+        </div>
+        <div>
+          <div class="party-lbl">From</div>
+          <div class="party-name">Emerson Global Enterprises</div>
+          <div class="party-info">CAC Registered Business<br/>RC No. 9486752</div>
+        </div>
+      </div>
+
+      <table class="inv-tbl">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div class="inv-totals">
+        <div class="tot-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+        ${discount > 0 ? `<div class="tot-row"><span>Discount</span><span>− ${fmt(discount)}</span></div>` : ''}
+        ${deposit > 0 ? `<div class="tot-row"><span>Deposit Paid</span><span>− ${fmt(deposit)}</span></div>` : ''}
+        <div class="tot-row grand"><span>Balance Due</span><span>${fmt(balance)}</span></div>
+      </div>
+
+      <div class="inv-pay">
+        <div class="inv-pay-lbl">Payment Details</div>
+        <div class="inv-pay-info">
+          Bank: <strong>OPay</strong> &nbsp;|&nbsp; Account Name: <strong>Emmanuel Daniel</strong><br/>
+          <div class="inv-pay-acct">9060584228</div>
+        </div>
+      </div>
+
+      ${notes ? `<div class="inv-notes"><div class="inv-notes-lbl">Notes</div><p>${notes}</p></div>` : ''}
+
+      <div class="inv-foot">Emerson Global Enterprises · RC No. 9486752 · Maiduguri, Nigeria</div>
+    `;
+  }
+
+  renderItems();
+  update();
+</script>
+</body>
+</html>
