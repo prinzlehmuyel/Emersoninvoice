@@ -1,4 +1,0 @@
-Invoice #,Date,Customer,Phone,Location,Items,Subtotal,Discount,Deposit,Balance Due
-"INV-00122/04/2026","2026-04-22","Dicey world","08168006062","New tashan bama","Reaktor x5, Lacasera Small x15, Monster x21","514500","3000","40000","471500"
-"INV-00122/04/2026","2026-04-22","John doe","08168006062","Conplex university","Dudu Yoghurt x5, Pop Cola x15, Planet Small x21","120250","10000","20000","90250"
-"","","","","","TOTAL",634750,13000,60000,561750
