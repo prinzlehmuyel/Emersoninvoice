@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Emerson Global — Invoice & Sales</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C9A84C; --gold-light: #E8C96A;
+      --dark: #0D0D0D; --dark2: #1A1A1A; --dark3: #2A2A2A;
+      --text: #E8E4DC; --muted: #888; --border: rgba(201,168,76,0.2);
+      --bg: #111111; --green: #27ae60;
+    }
+    body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* TABS */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--dark2); }
+    .tab { padding: 14px 28px; font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /* INVOICE TAB */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .app { display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 50px); }
+    .form-panel { background: var(--dark2); padding: 32px; border-right: 1px solid var(--border); overflow-y: auto; max-height: calc(100vh - 50px); }
+    .form-brand h1 { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--gold); letter-spacing: 2px; }
+    .form-brand p { font-size: 0.72rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+    .sec { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    .field input, .field textarea, .field select { width: 100%; background: var(--dark3); border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; padding: 10px 12px; font-family: 'Jost', sans-serif; font-size: 0.88rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--gold); }
+    .field select option { background: var(--dark3); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .items-hdr { display: grid; grid-template-columns: 2fr 1fr 36px; gap: 8px; margin-bottom: 6px; }
+    .items-hdr span { font-size: 0.62rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .item-row { display: grid; grid-template-columns: 2fr 1fr 36px; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .item-row select, .item-row input { padding: 8px 10px; font-size: 0.82rem; }
+    .rm-btn { width: 32px; height: 32px; background: none; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; color: var(--muted); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .rm-btn:hover { border-color: #c0392b; color: #c0392b; }
+    .add-btn { background: none; border: 1px dashed var(--gold); color: var(--gold); border-radius: 4px; padding: 8px; font-family: 'Jost', sans-serif; font-size: 0.8rem; cursor: pointer; width: 100%; margin-top: 4px; transition: background 0.2s; }
+    .add-btn:hover { background: rgba(201,168,76,0.06); }
+
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; }
+    .gen-btn { background: var(--gold); color: var(--dark); border: none; border-radius: 5px; padding: 13px; font-family: 'Jost', sans-serif; font-size: 0.82rem; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.3s; }
+    .gen-btn:hover { background: var(--gold-light); }
+    .log-btn { background: var(--green); color: white; border: none; border-radius: 5px; padding: 13px; font-family: 'Jost', sans-serif; font-size: 0.82rem; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.3s; }
+    .log-btn:hover { background: #2ecc71; }
+
+    /* PREVIEW */
+    .preview-panel { background: #1C1C1C; padding: 32px; overflow-y: auto; max-height: calc(100vh - 50px); }
+    .preview-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .preview-top span { font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+    .dl-btn { background: var(--gold); color: var(--dark); border: none; border-radius: 4px; padding: 8px 16px; font-family: 'Jost', sans-serif; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+    .dl-btn:hover { background: var(--gold-light); }
+
+    /* INVOICE */
+    .invoice { background: white; color: #1A1A1A; padding: 44px; border-radius: 2px; max-width: 580px; margin: 0 auto; box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+    .inv-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 22px; border-bottom: 3px solid #0D0D0D; }
+    .inv-biz h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 700; color: #C9A84C; letter-spacing: 1px; }
+    .inv-biz .tagline { font-size: 0.7rem; color: #888; letter-spacing: 1px; margin-top: 2px; }
+    .inv-biz .biz-info { font-size: 0.76rem; color: #444; margin-top: 8px; line-height: 1.7; }
+    .inv-right { text-align: right; }
+    .inv-right .inv-word { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 700; color: #0D0D0D; text-transform: uppercase; letter-spacing: 3px; line-height: 1; }
+    .inv-right .inv-num { font-size: 0.72rem; color: #C9A84C; letter-spacing: 1px; margin-top: 6px; }
+    .inv-right .inv-dates { font-size: 0.72rem; color: #888; margin-top: 4px; line-height: 1.6; }
+    .inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 28px; }
+    .party-lbl { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: #C9A84C; margin-bottom: 5px; }
+    .party-name { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 600; color: #0D0D0D; margin-bottom: 2px; }
+    .party-info { font-size: 0.76rem; color: #555; line-height: 1.6; }
+    table.inv-tbl { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .inv-tbl th { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: #888; padding: 7px 0; border-bottom: 1px solid #E0D8CC; text-align: left; }
+    .inv-tbl th:nth-child(2), .inv-tbl th:nth-child(3), .inv-tbl th:nth-child(4) { text-align: right; }
+    .inv-tbl td { padding: 10px 0; border-bottom: 1px solid #F0EBE3; font-size: 0.83rem; color: #444; }
+    .inv-tbl td:first-child { color: #1A1A1A; font-weight: 500; }
+    .inv-tbl td:nth-child(2), .inv-tbl td:nth-child(3), .inv-tbl td:nth-child(4) { text-align: right; }
+    .inv-totals { margin-left: auto; width: 200px; }
+    .tot-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.82rem; color: #555; }
+    .tot-row.grand { border-top: 2px solid #0D0D0D; margin-top: 8px; padding-top: 8px; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 700; color: #0D0D0D; }
+    .inv-pay { margin-top: 28px; padding-top: 18px; border-top: 1px solid #E0D8CC; }
+    .inv-pay-lbl { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: #C9A84C; margin-bottom: 7px; }
+    .inv-pay-info { font-size: 0.78rem; color: #444; line-height: 1.8; }
+    .inv-pay-acct { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; color: #0D0D0D; letter-spacing: 2px; }
+    .inv-notes { margin-top: 18px; background: #F7F4EF; border-radius: 3px; padding: 12px 14px; }
+    .inv-notes-lbl { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 5px; }
+    .inv-notes p { font-size: 0.78rem; color: #555; line-height: 1.6; }
+    .inv-foot { margin-top: 24px; text-align: center; font-size: 0.68rem; color: #aaa; letter-spacing: 1px; }
+    .stamp-trigger { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .stamp-trigger-btn { background: none; border: 1.5px dashed #C9A84C; color: #C9A84C; border-radius: 6px; padding: 8px 18px; font-family: "Jost", sans-serif; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+    .stamp-trigger-btn:hover { background: rgba(201,168,76,0.08); }
+    .inv-stamp-row { display: flex; justify-content: flex-end; align-items: center; margin-top: 24px; padding-top: 16px; }
+    .stamp {
+      width: 110px; height: 110px; border-radius: 50%;
+      border: 3px solid #C9A84C; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; opacity: 0;
+      transform: rotate(-15deg) scale(0.5);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .stamp.stamped { opacity: 0.85; transform: rotate(-15deg) scale(1); }
+    .stamp::before {
+      content: ''; position: absolute; inset: 4px;
+      border-radius: 50%; border: 1.5px dashed #C9A84C;
+    }
+    .stamp-inner { text-align: center; z-index: 1; }
+    .stamp-name { font-family: 'Cormorant Garamond', serif; font-size: 0.62rem; font-weight: 700; color: #C9A84C; letter-spacing: 2px; text-transform: uppercase; line-height: 1.3; }
+    .stamp-star { font-size: 0.7rem; color: #C9A84C; margin: 3px 0; }
+    .stamp-rc { font-size: 0.52rem; color: #C9A84C; letter-spacing: 1.5px; text-transform: uppercase; }
+
+    /* SALES LOG TAB */
+    .sales-panel { padding: 36px; }
+    .sales-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: gap; gap: 12px; }
+    .sales-title h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; color: var(--gold); }
+    .sales-title p { font-size: 0.72rem; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+    .sales-actions { display: flex; gap: 10px; }
+    .export-btn { background: var(--green); color: white; border: none; border-radius: 5px; padding: 10px 20px; font-family: 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+    .export-btn:hover { background: #2ecc71; }
+    .clear-btn { background: none; border: 1px solid rgba(255,255,255,0.1); color: var(--muted); border-radius: 5px; padding: 10px 16px; font-family: 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .clear-btn:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* SUMMARY CARDS */
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .card { background: var(--dark2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .card-label { font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .card-value { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--gold); }
+
+    .sales-table-wrap { overflow-x: auto; }
+    table.sales-tbl { width: 100%; border-collapse: collapse; min-width: 700px; }
+    .sales-tbl th { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    .sales-tbl td { padding: 12px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.84rem; color: var(--text); vertical-align: top; }
+    .sales-tbl tr:hover td { background: rgba(255,255,255,0.02); }
+    .badge { display: inline-block; background: rgba(201,168,76,0.15); color: var(--gold); border-radius: 4px; padding: 2px 8px; font-size: 0.72rem; }
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+    .empty-state p { font-size: 1rem; margin-bottom: 8px; }
+    .empty-state small { font-size: 0.8rem; }
+
+    /* PRINT */
+    @media print {
+      .tabs, .form-panel, .preview-top, .btn-row { display: none !important; }
+      .app { display: block; }
+      .preview-panel { padding: 0; background: white; max-height: none; }
+      .invoice { box-shadow: none; max-width: 100%; }
+      #salesTab { display: none !important; }
+    }
+
+    /* LOGIN */
+    .login-screen { position: fixed; inset: 0; background: #0D0D0D; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-box { background: #1A1A1A; border: 1px solid rgba(201,168,76,0.2); border-radius: 12px; padding: 48px 40px; width: 100%; max-width: 400px; }
+    .login-logo { font-family: "Cormorant Garamond", serif; font-size: 1.8rem; font-weight: 700; color: #C9A84C; letter-spacing: 2px; text-align: center; margin-bottom: 6px; }
+    .login-sub { font-size: 0.72rem; color: #888; letter-spacing: 2px; text-transform: uppercase; text-align: center; margin-bottom: 36px; }
+    .login-field { margin-bottom: 16px; }
+    .login-field label { display: block; font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+    .login-field input { width: 100%; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 12px 16px; font-family: "Jost", sans-serif; font-size: 0.95rem; color: #E8E4DC; outline: none; transition: border-color 0.2s; }
+    .login-field input:focus { border-color: #C9A84C; }
+    .login-btn { width: 100%; background: #C9A84C; color: #0D0D0D; border: none; border-radius: 6px; padding: 14px; font-family: "Jost", sans-serif; font-size: 0.88rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: background 0.3s; }
+    .login-btn:hover { background: #E8C96A; }
+    .login-error { color: #e74c3c; font-size: 0.8rem; text-align: center; margin-top: 12px; display: none; }
+    .login-lock { font-size: 3rem; text-align: center; margin-bottom: 20px; }
+
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .form-panel, .preview-panel { max-height: none; }
+      .preview-panel { display: block; }
+      #mobileStampBtn { display: flex !important; }
+      #mobileInvoiceStamp { display: block !important; }
+    }
+    #mobileStampBtn { display: none; }
+    #mobileInvoiceStamp { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- TABS -->
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-lock">🔐</div>
+    <div class="login-logo">Emerson Global</div>
+    <div class="login-sub">Invoice System · Authorized Access Only</div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="off"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Login →</button>
+    <div class="login-error" id="loginError">❌ Incorrect username or password</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('invoice')">📄 Invoice</div>
+  <div class="tab" onclick="switchTab('sales')" id="salesTabBtn">📊 Sales Log <span id="salesCount" style="background:var(--gold);color:var(--dark);border-radius:10px;padding:1px 7px;font-size:0.68rem;margin-left:4px">0</span></div>
+</div>
+
+<!-- INVOICE TAB -->
+<div class="tab-content active" id="invoiceTab">
+  <div class="app">
+    <div class="form-panel">
+      <div class="form-brand">
+        <h1>Emerson Global</h1>
+        <p>Invoice Generator</p>
+      </div>
+
+      <div class="sec">Invoice Details</div>
+      <div class="field-row">
+        <div class="field"><label>Invoice No.</label><input type="text" id="invNum" value="INV-001" oninput="update()"/></div>
+        <div class="field"><label>Date</label><input type="date" id="invDate" oninput="update()"/></div>
+      </div>
+      <div class="field"><label>Due Date</label><input type="date" id="dueDate" oninput="update()"/></div>
+
+      <div class="sec">Customer Details</div>
+      <div class="field"><label>Customer Name</label><input type="text" id="custName" placeholder="e.g. Amina Bello" oninput="update()"/></div>
+      <div class="field-row">
+        <div class="field"><label>Phone</label><input type="text" id="custPhone" placeholder="08012345678" oninput="update()"/></div>
+        <div class="field"><label>Location</label><input type="text" id="custLocation" placeholder="e.g. Kano" oninput="update()"/></div>
+      </div>
+
+      <div class="sec">Order Items</div>
+      <div class="items-hdr"><span>Product</span><span>Cartons</span><span></span></div>
+      <div id="itemsContainer"></div>
+      <button class="add-btn" onclick="addItem()">+ Add Product</button>
+
+      <div class="sec">Summary</div>
+      <div class="field-row">
+        <div class="field"><label>Discount (₦)</label><input type="number" id="discount" value="0" oninput="update()"/></div>
+        <div class="field"><label>Deposit Paid (₦)</label><input type="number" id="deposit" value="0" oninput="update()"/></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="notes" placeholder="e.g. Thank you! Delivery within 24 hours." oninput="update()"></textarea></div>
+
+      <!-- MOBILE STAMP BUTTON -->
+      <div id="mobileStampBtn" style="margin-top:16px;margin-bottom:8px;">
+        <button class="add-btn" id="mobileStampTrigger" onclick="applyStampMobile()" style="border-color:#C9A84C;color:#C9A84C;padding:12px;font-size:0.82rem;letter-spacing:1.5px;">🔏 Apply Official Stamp</button>
+        <div id="mobileInvoiceStamp" style="display:none;margin-top:12px;display:flex;justify-content:flex-end;">
+          <div id="mobileStamp" style="width:100px;height:100px;border-radius:50%;border:3px solid #C9A84C;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;transform:rotate(-15deg) scale(0.3);transition:opacity 0.5s ease,transform 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">
+            <div style="position:absolute;inset:4px;border-radius:50%;border:1.5px dashed #C9A84C;"></div>
+            <div style="text-align:center;z-index:1;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:0.58rem;font-weight:700;color:#C9A84C;letter-spacing:2px;text-transform:uppercase;line-height:1.3;">Emerson<br/>Global</div>
+              <div style="font-size:0.65rem;color:#C9A84C;margin:3px 0;">✦</div>
+              <div style="font-size:0.48rem;color:#C9A84C;letter-spacing:1.5px;text-transform:uppercase;">RC 9486752</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="gen-btn" onclick="downloadInvoice()">⬇ Download PDF</button>
+        <button class="log-btn" onclick="logAndDownload()">✅ Log & Download</button>
+      </div>
+    </div>
+
+    <div class="preview-panel">
+      <div class="preview-top">
+        <span>Live Preview</span>
+        <button class="dl-btn" onclick="downloadInvoice()">⬇ Download PDF</button>
+      </div>
+      <div class="invoice" id="invoice"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SALES LOG TAB -->
+<div class="tab-content" id="salesTab">
+  <div class="sales-panel">
+    <div class="sales-header">
+      <div class="sales-title">
+        <h2>Sales Log</h2>
+        <p id="salesDate">Today's records</p>
+      </div>
+      <div class="sales-actions">
+        <button class="export-btn" onclick="exportExcel()">⬇ Export Excel</button>
+        <button class="clear-btn" onclick="clearSales()">🗑 Clear Log</button>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="card"><div class="card-label">Total Invoices</div><div class="card-value" id="totalInvoices">0</div></div>
+      <div class="card"><div class="card-label">Total Revenue</div><div class="card-value" id="totalRevenue">₦0</div></div>
+      <div class="card"><div class="card-label">Total Discount</div><div class="card-value" id="totalDiscount">₦0</div></div>
+      <div class="card"><div class="card-label">Balance Due</div><div class="card-value" id="totalBalance">₦0</div></div>
+    </div>
+
+    <div class="sales-table-wrap">
+      <table class="sales-tbl" id="salesTable">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Location</th>
+            <th>Items</th>
+            <th>Subtotal</th>
+            <th>Discount</th>
+            <th>Deposit</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="salesBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState">
+        <p>📋 No sales recorded yet</p>
+        <small>Fill an invoice and tap "Log & Download" to record a sale</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PRODUCTS = [
+    { name: 'Pet Coke',       price: 4500 },
+    { name: 'Peach',          price: 6200 },
+    { name: 'Fearless',       price: 5000 },
+    { name: 'Predator',       price: 5000 },
+    { name: 'Reaktor',        price: 4200 },
+    { name: 'Cheetah',        price: 3600 },
+    { name: 'Nutri Milk',     price: 5500 },
+    { name: 'Dudu Yoghurt',   price: 6800 },
+    { name: 'Yugo',           price: 6900 },
+    { name: 'Monster',        price: 21500 },
+    { name: 'Pop Power',      price: 2800 },
+    { name: 'Pop Cola',       price: 2250 },
+    { name: 'Lacasera Small', price: 2800 },
+    { name: 'Lacasera Big',   price: 4200 },
+    { name: 'Planet Small',   price: 2500 },
+    { name: 'Planet Big',     price: 4200 },
+    { name: 'Maltina Can',    price: 11800 },
+    { name: 'Malt Pet',       price: 5200 },
+    { name: 'Malta Guinness', price: 11800 },
+  ];
+
+  const productOptions = PRODUCTS.map((p, i) =>
+    `<option value="${i}">${p.name} — ₦${p.price.toLocaleString()}/carton</option>`
+  ).join('');
+
+  let items = [{ productIdx: 0, qty: 1 }];
+  let salesLog = JSON.parse(localStorage.getItem('emerson_sales') || '[]');
+
+  // Set dates
+  const today = new Date();
+  document.getElementById('invDate').value = today.toISOString().split('T')[0];
+  const due = new Date(today); due.setDate(due.getDate() + 3);
+  document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+  document.getElementById('salesDate').textContent = today.toDateString();
+
+  // Auto generate invoice number from date+time
+  function generateInvNum() {
+    const now = new Date();
+    const y = now.getFullYear().toString().slice(2);
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    const h = String(now.getHours()).padStart(2,'0');
+    const min = String(now.getMinutes()).padStart(2,'0');
+    return `EMG-${y}${m}${d}-${h}${min}`;
+  }
+  document.getElementById('invNum').value = generateInvNum();
+  document.getElementById('invNum').readOnly = true;
+  document.getElementById('invNum').style.opacity = '0.7';
+  document.getElementById('invNum').style.cursor = 'not-allowed';
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    if (tab === 'invoice') {
+      document.querySelector('.tab:first-child').classList.add('active');
+      document.getElementById('invoiceTab').classList.add('active');
+    } else {
+      document.querySelector('.tab:last-child').classList.add('active');
+      document.getElementById('salesTab').classList.add('active');
+      renderSales();
+    }
+  }
+
+  function addItem() { items.push({ productIdx: 0, qty: 1 }); renderItems(); update(); }
+
+  function removeItem(i) {
+    if (items.length === 1) return;
+    items.splice(i, 1); renderItems(); update();
+  }
+
+  function renderItems() {
+    document.getElementById('itemsContainer').innerHTML = items.map((item, i) => `
+      <div class="item-row">
+        <select onchange="items[${i}].productIdx=+this.value;update()">${productOptions.replace(`value="${item.productIdx}"`, `value="${item.productIdx}" selected`)}</select>
+        <input type="number" min="1" value="${item.qty}" oninput="items[${i}].qty=+this.value;update()"/>
+        <button class="rm-btn" onclick="removeItem(${i})">×</button>
+      </div>`).join('');
+  }
+
+  const fmt = n => '₦' + Number(n).toLocaleString('en-NG');
+  const fmtDate = d => {
+    if (!d) return '—';
+    const [y, m, day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${day} ${months[+m-1]} ${y}`;
+  };
+
+  function getValues() {
+    const subtotal = items.reduce((s, item) => s + (PRODUCTS[item.productIdx].price * item.qty), 0);
+    const discount = +document.getElementById('discount').value || 0;
+    const deposit = +document.getElementById('deposit').value || 0;
+    const total = subtotal - discount;
+    const balance = total - deposit;
+    return { subtotal, discount, deposit, total, balance };
+  }
+
+  function update() {
+    const invNum = document.getElementById('invNum').value || 'INV-001';
+    const invDate = document.getElementById('invDate').value;
+    const dueDate = document.getElementById('dueDate').value;
+    const custName = document.getElementById('custName').value || 'Customer Name';
+    const custPhone = document.getElementById('custPhone').value || '';
+    const custLocation = document.getElementById('custLocation').value || '';
+    const notes = document.getElementById('notes').value || '';
+    const { subtotal, discount, deposit, balance } = getValues();
+
+    const rows = items.map(item => {
+      const p = PRODUCTS[item.productIdx];
+      return `<tr><td>${p.name}</td><td>${item.qty} carton${item.qty>1?'s':''}</td><td>${fmt(p.price)}</td><td>${fmt(p.price*item.qty)}</td></tr>`;
+    }).join('');
+
+    document.getElementById('invoice').innerHTML = `
+      <div class="inv-top">
+        <div class="inv-biz">
+          <h2>Emerson Global</h2>
+          <div class="tagline">Trade · Retail · E-Commerce</div>
+          <div class="biz-info">📞 09060584228<br/>Maiduguri, Borno, Nigeria<br/>RC No. 9486752</div>
+        </div>
+        <div class="inv-right">
+          <div class="inv-word">Invoice</div>
+          <div class="inv-num">#${invNum}</div>
+          <div class="inv-dates">Date: ${fmtDate(invDate)}<br/>Due: ${fmtDate(dueDate)}</div>
+        </div>
+      </div>
+      <div class="inv-parties">
+        <div>
+          <div class="party-lbl">Billed To</div>
+          <div class="party-name">${custName}</div>
+          <div class="party-info">${custPhone}${custLocation?'<br/>'+custLocation:''}</div>
+        </div>
+        <div>
+          <div class="party-lbl">From</div>
+          <div class="party-name">Emerson Global Enterprises</div>
+          <div class="party-info">CAC Registered · RC No. 9486752</div>
+        </div>
+      </div>
+      <table class="inv-tbl">
+        <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="inv-totals">
+        <div class="tot-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+        ${discount>0?`<div class="tot-row"><span>Discount</span><span>− ${fmt(discount)}</span></div>`:''}
+        ${deposit>0?`<div class="tot-row"><span>Deposit Paid</span><span>− ${fmt(deposit)}</span></div>`:''}
+        <div class="tot-row grand"><span>Balance Due</span><span>${fmt(balance)}</span></div>
+      </div>
+      <div class="inv-pay">
+        <div class="inv-pay-lbl">Payment Details</div>
+        <div class="inv-pay-info">Bank: <strong>OPay</strong> &nbsp;|&nbsp; Account Name: <strong>Emmanuel Daniel</strong><br/><div class="inv-pay-acct">9060584228</div></div>
+      </div>
+      ${notes?`<div class="inv-notes"><div class="inv-notes-lbl">Notes</div><p>${notes}</p></div>`:''}
+      <div class="inv-foot">Emerson Global Enterprises · RC No. 9486752 · Maiduguri, Nigeria</div>`;
+  }
+
+  function downloadInvoice() { window.print(); }
+
+  function logAndDownload() {
+    const invNum = document.getElementById('invNum').value || 'INV-001';
+    const invDate = document.getElementById('invDate').value;
+    const custName = document.getElementById('custName').value || 'Unknown';
+    const custPhone = document.getElementById('custPhone').value || '';
+    const custLocation = document.getElementById('custLocation').value || '';
+    const { subtotal, discount, deposit, balance } = getValues();
+
+    const itemsSummary = items.map(item => {
+      const p = PRODUCTS[item.productIdx];
+      return `${p.name} x${item.qty}`;
+    }).join(', ');
+
+    const record = {
+      invNum, date: invDate, custName, custPhone, custLocation,
+      items: itemsSummary, subtotal, discount, deposit, balance,
+      loggedAt: new Date().toISOString()
+    };
+
+    salesLog.push(record);
+    localStorage.setItem('emerson_sales', JSON.stringify(salesLog));
+    document.getElementById('salesCount').textContent = salesLog.length;
+
+    window.print();
+
+    // Auto increment invoice number
+    const match = invNum.match(/(\D+)(\d+)/);
+    if (match) {
+      document.getElementById('invNum').value = match[1] + (parseInt(match[2]) + 1).toString().padStart(match[2].length, '0');
+    }
+
+    setTimeout(() => alert('✅ Sale logged! Check the Sales Log tab.'), 500);
+  }
+
+  function renderSales() {
+    const body = document.getElementById('salesBody');
+    const empty = document.getElementById('emptyState');
+
+    document.getElementById('salesCount').textContent = salesLog.length;
+
+    if (salesLog.length === 0) {
+      body.innerHTML = '';
+      empty.style.display = 'block';
+      document.getElementById('totalInvoices').textContent = '0';
+      document.getElementById('totalRevenue').textContent = '₦0';
+      document.getElementById('totalDiscount').textContent = '₦0';
+      document.getElementById('totalBalance').textContent = '₦0';
+      return;
+    }
+
+    empty.style.display = 'none';
+    const totalRevenue = salesLog.reduce((s, r) => s + r.subtotal, 0);
+    const totalDiscount = salesLog.reduce((s, r) => s + r.discount, 0);
+    const totalBalance = salesLog.reduce((s, r) => s + r.balance, 0);
+
+    document.getElementById('totalInvoices').textContent = salesLog.length;
+    document.getElementById('totalRevenue').textContent = fmt(totalRevenue);
+    document.getElementById('totalDiscount').textContent = fmt(totalDiscount);
+    document.getElementById('totalBalance').textContent = fmt(totalBalance);
+
+    body.innerHTML = salesLog.slice().reverse().map(r => `
+      <tr>
+        <td><span class="badge">${r.invNum}</span></td>
+        <td>${fmtDate(r.date)}</td>
+        <td>${r.custName}</td>
+        <td>${r.custPhone || '—'}</td>
+        <td>${r.custLocation || '—'}</td>
+        <td style="font-size:0.78rem;color:var(--muted);max-width:200px">${r.items}</td>
+        <td>${fmt(r.subtotal)}</td>
+        <td>${r.discount > 0 ? fmt(r.discount) : '—'}</td>
+        <td>${r.deposit > 0 ? fmt(r.deposit) : '—'}</td>
+        <td style="color:var(--gold);font-weight:500">${fmt(r.balance)}</td>
+      </tr>`).join('');
+  }
+
+  function exportExcel() {
+    if (salesLog.length === 0) { alert('No sales to export yet!'); return; }
+
+    const headers = ['Invoice #','Date','Customer','Phone','Location','Items','Subtotal','Discount','Deposit','Balance Due'];
+    const rows = salesLog.map(r => [
+      r.invNum, r.date, r.custName, r.custPhone, r.custLocation,
+      r.items, r.subtotal, r.discount, r.deposit, r.balance
+    ]);
+
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+    });
+
+    // Add totals row
+    const totalRevenue = salesLog.reduce((s, r) => s + r.subtotal, 0);
+    const totalDiscount = salesLog.reduce((s, r) => s + r.discount, 0);
+    const totalDeposit = salesLog.reduce((s, r) => s + r.deposit, 0);
+    const totalBalance = salesLog.reduce((s, r) => s + r.balance, 0);
+    csv += `"","","","","","TOTAL",${totalRevenue},${totalDiscount},${totalDeposit},${totalBalance}\n`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Emerson-Sales-${today.toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function clearSales() {
+    if (!confirm('Clear all sales records? This cannot be undone.')) return;
+    salesLog = [];
+    localStorage.setItem('emerson_sales', '[]');
+    renderSales();
+  }
+
+  // LOGIN
+  function doLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    if (user === 'Emersonglobal' && pass === 'Emerson9090') {
+      document.getElementById('loginScreen').style.display = 'none';
+      sessionStorage.setItem('emerson_auth', '1');
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('loginPass').value = '';
+    }
+  }
+
+  // Check if already logged in this session
+  if (sessionStorage.getItem('emerson_auth') === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+  }
+
+  renderItems();
+  update();
+  document.getElementById('salesCount').textContent = salesLog.length;
+
+  let stampApplied = false;
+
+  function applyStampMobile() {
+    // Apply stamp inside the invoice preview (this is what prints)
+    applyStamp();
+    // Also show mobile visual
+    const stampDiv = document.getElementById('mobileInvoiceStamp');
+    const stamp = document.getElementById('mobileStamp');
+    const btn = document.getElementById('mobileStampTrigger');
+    stampDiv.style.display = 'flex';
+    setTimeout(() => {
+      stamp.style.opacity = '0.85';
+      stamp.style.transform = 'rotate(-15deg) scale(1)';
+    }, 50);
+    btn.textContent = '✅ Stamp Applied';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  }
+
+  function applyStamp() {
+    if (stampApplied) return;
+    stampApplied = true;
+    const overlay = document.getElementById('stampOverlay');
+    const stamp = document.getElementById('invoiceStamp');
+    const btn = document.getElementById('stampBtn');
+    // Show overlay
+    overlay.style.display = 'block';
+    // Animate stamp
+    stamp.style.opacity = '0';
+    stamp.style.transform = 'rotate(-15deg) scale(0.3)';
+    stamp.style.transition = 'opacity 0.5s ease, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    setTimeout(() => {
+      stamp.style.opacity = '0.85';
+      stamp.style.transform = 'rotate(-15deg) scale(1)';
+    }, 50);
+    btn.textContent = '✅ Stamp Applied';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  }
+</script>
+</body>
+</html>
